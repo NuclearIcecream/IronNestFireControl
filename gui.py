@@ -16,6 +16,8 @@ class FireControlApp:
 
         self.root = tk.Tk()
 
+        self.cards = []
+
         self.root.title(
             "Iron Nest Fire Control"
         )
@@ -134,8 +136,44 @@ class FireControlApp:
 
         self.error_label.pack()
 
+        # Current Fire Mission Area
+        self.current_frame = tk.Frame(
+            self.root,
+            bd=2,
+            relief="solid",
+            bg="#d9d9d9"
+        )
+
+        self.current_frame.pack(
+            fill="x",
+            padx=10,
+            pady=5
+        )
+
+        self.current_card = tk.Frame(
+            self.current_frame,
+            bd=2,
+            relief="solid",
+            bg="#f2f2f2"
+        )
+
+        self.current_card.pack(
+            fill="x",
+            padx=5,
+            pady=5
+        )
+
     def build_log_area(self):
 
+        ttk.Label(
+            self.root,
+            text="MISSION HISTORY",
+            font=("Consolas", 12, "bold")
+        ).pack(
+            anchor="w",
+            padx=10,
+            pady=(10, 0)
+        )
         self.canvas = tk.Canvas(
             self.root
         )
@@ -179,6 +217,18 @@ class FireControlApp:
             fill="y"
         )
 
+        self.current_frame = tk.Frame(
+            self.root,
+            bd=2,
+            relief="solid"
+        )
+
+        self.current_frame.pack(
+            fill="x",
+            padx=10,
+            pady=5
+        )
+
     def on_mousewheel(self, event):
 
         self.canvas.yview_scroll(
@@ -190,6 +240,8 @@ class FireControlApp:
 
         for child in (self.mission_container.winfo_children()):
             child.destroy()
+
+        self.cards.clear()
 
         mission_log.clear_history()
 
@@ -218,11 +270,6 @@ class FireControlApp:
                 target_text
             )
 
-            if mission_log.mission_exists(current_mission):
-
-                self.error_label.config(text="Mission already exists.")
-                return
-
             gun = parse_position(gun_text)
 
             target = parse_position(target_text)
@@ -233,7 +280,7 @@ class FireControlApp:
 
             charges = get_valid_charges(distance)
 
-            self.create_card(
+            self.update_current_mission(
                 gun_text,
                 target_text,
                 bearing,
@@ -241,15 +288,95 @@ class FireControlApp:
                 charges
             )
 
-            mission_log.add_mission(current_mission)
+            if not mission_log.mission_exists(current_mission):
 
-            mission_log.increment_counter()
+                self.create_card(
+                    gun_text,
+                    target_text,
+                    bearing,
+                    distance,
+                    charges
+                )
+
+                mission_log.add_mission(
+                    current_mission
+                )
+
+                mission_log.increment_counter()
 
             self.error_label.config(text="")
 
         except Exception as ex:
 
             self.error_label.config(text=str(ex))
+
+    def update_current_mission(
+        self,
+        gun,
+        target,
+        bearing,
+        distance,
+        charges
+    ):
+
+        # Clear current mission contents
+        for widget in self.current_card.winfo_children():
+            widget.destroy()
+
+        # Recreate header
+        tk.Label(
+            self.current_card,
+            text=f"Gun: {gun}",
+            bg="#d9d9d9"
+        ).pack(anchor="w", padx=5)
+
+        tk.Label(
+            self.current_card,
+            text=f"Target: {target}",
+            bg="#d9d9d9"
+        ).pack(anchor="w", padx=5)
+
+        tk.Label(
+            self.current_card,
+            text=f"Bearing: {bearing}°",
+            bg="#d9d9d9"
+        ).pack(anchor="w", padx=5)
+
+        tk.Label(
+            self.current_card,
+            text=f"Range: {distance} km",
+            bg="#d9d9d9"
+        ).pack(anchor="w", padx=5)
+
+        ttk.Separator(
+            self.current_card
+        ).pack(
+            fill="x",
+            pady=4
+        )
+
+        if not charges:
+
+            tk.Label(
+                self.current_card,
+                text="NO VALID FIRING SOLUTION",
+                fg="red",
+                bg="#d9d9d9"
+            ).pack(anchor="w", padx=10)
+
+        else:
+
+            for charge, elevation in charges:
+
+                tk.Label(
+                    self.current_card,
+                    text=
+                    f"Charge {charge} → {elevation}°",
+                    bg="#d9d9d9"
+                ).pack(
+                    anchor="w",
+                    padx=15
+                )
 
     def create_card(
         self,
@@ -267,11 +394,6 @@ class FireControlApp:
             bd=2,
             relief="solid",
             bg="#f2f2f2"
-        )
-
-        card.pack(
-            fill="x",
-            pady=5
         )
 
         tk.Label(
@@ -344,6 +466,17 @@ class FireControlApp:
                     anchor="w",
                     padx=15
                 )
+
+        self.cards.insert(0, card)
+
+        for widget in self.mission_container.winfo_children():
+            widget.pack_forget()
+
+        for widget in self.cards:
+            widget.pack(
+            fill="x",
+            pady=5
+            )
 
         self.canvas.yview_moveto(0)
 
