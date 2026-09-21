@@ -150,6 +150,16 @@ class FireControlApp:
             pady=5
         )
 
+        tk.Label(self.current_frame,
+            text="CURRENT FIRE MISSION",
+            font=("Consolas", 12, "bold"),
+            bg="#d9d9d9"
+        ).pack(
+            anchor="w",
+            padx=5,
+            pady=5
+        )
+
         self.current_card = tk.Frame(
             self.current_frame,
             bd=2,
